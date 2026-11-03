@@ -1,19 +1,20 @@
 from __future__ import annotations
-import sys
 import random
 
 
-# Codifica dei muri utilizzando i bit
+# All the four walls expressed in bit
 N, E, S, W = 1, 2, 4, 8
 
-# Tutti i quattro muri chiusi
+# All the walls are closed
 ALL_WALLS = N | E | S | W
 
-DIR_X :dict[int, int] = {E: 1, W: -1, N: 0, S: 0}
+# calculate coordinates of the cell adjacent of the direction
+DIR_X: dict[int, int] = {E: 1, W: -1, N: 0, S: 0}
 DIR_Y: dict[int, int] = {E: 0, W: 0, N: -1, S: 1}
+
 OPPOSITE: dict[int, int] = {E: W, W: E, N: S, S: N}
 
-# Creazione del pattern "42" con i bit (5 righe x 11 colonne e 1 colonna di spazion)
+# Creation of "42" pattern with bit (5 row X 11 col and 1 col for spase)
 PATTERN_42: list[list[int]] = [
     [1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0],
     [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0],
@@ -33,9 +34,8 @@ class MazeGenerator:
     """
 
     def __init__(
-        self, width: int, height: int, seed: int | None,
-        perfect: bool = True, draw_42: bool = True,
-        ) -> None:
+                self, width: int, height: int, seed: int | None,
+                perfect: bool = True, draw_42: bool = True) -> None:
         if width < 2 or height < 2:
             raise ValueError("Maze size must be at least 2x2")
         self.width = width
@@ -56,8 +56,7 @@ class MazeGenerator:
         pattern_h = len(PATTERN_42)
         pattern_w = len(PATTERN_42[0])
         # create a 1 cell margin around the pattern
-        if (self.width < (pattern_w + 2)
-            or self.height < (pattern_h + 2)):
+        if (self.width < (pattern_w + 2) or self.height < (pattern_h + 2)):
             print("[Warning!] Maze too small to draw '42', skipping.")
             return
         offset_x = (self.width - pattern_w) // 2
@@ -68,7 +67,7 @@ class MazeGenerator:
                     x, y = offset_x + i, offset_y + j
                     self._reserved.add((x, y))
                     # all walls closed
-                    self._grid[y][x]= ALL_WALLS
+                    self._grid[y][x] = ALL_WALLS
 
     def generate(self) -> list[list[int]]:
         """Execute recursive backtracking
@@ -86,7 +85,7 @@ class MazeGenerator:
         """
         for y in range(self.height):
             for x in range(self.width):
-                if (x, y )not in self._reserved:
+                if (x, y) not in self._reserved:
                     return x, y
         raise RuntimeError("All cells reserved: maze impossible")
 
@@ -102,12 +101,14 @@ class MazeGenerator:
         self._ranum.shuffle(directions)
         for d in directions:
             new_x, new_y = carve_x + DIR_X[d], carve_y + DIR_Y[d]
-            if not(0 <= new_x < self.width and 0 <= new_y < self.height):
+            # border control
+            if not (0 <= new_x < self.width and 0 <= new_y < self.height):
                 continue
             if ((new_x, new_y) in self._reserved or
-                (new_x, new_y) in self._visited):
-                    continue
-            if self._grid[new_y][new_x] == ALL_WALLS and (new_x, new_y) not in self._reserved:
+               (new_x, new_y) in self._visited):
+                continue
+            if (self._grid[new_y][new_x] == ALL_WALLS and
+               (new_x, new_y) not in self._reserved):
                 # open walls from both directions
                 # &= bit to bit with assignement operator
                 # ~ bit to bit negation
@@ -129,22 +130,26 @@ class MazeGenerator:
                     continue
                 for d in (E, S):
                     new_x, new_y = x + DIR_X[d], y + DIR_Y[d]
-                    if not (0 <= new_x < self.width and 0 <= new_y < self.height):
+                    # border control
+                    if not (0 <= new_x < self.width and
+                            0 <= new_y < self.height):
                         continue
                     if (new_x, new_y) in self._reserved:
                         continue
                     # & d -> isolating bit of direction d
-                    if self._grid[new_y][new_x] & d and self._ranum.random() < extra:
+                    if (self._grid[new_y][new_x] & d and
+                       self._ranum.random() < extra):
                         self._grid[y][x] &= ~d
                         self._grid[new_y][new_x] &= ~OPPOSITE[d]
 
     def to_hex_lines(self) -> list[str]:
-        """ an esadecimal character per cell.
+        """ An hexadecimal character per cell.
 
         Returns:
-            list[str]: string of esadecimal character
+            list[str]: list of string, one string per row.
+            Each character a hex digit.
         """
         return [
             "".join(format(self._grid[y][x], "X") for x in range(self.width))
             for y in range(self.height)
-        ]   
+        ]
