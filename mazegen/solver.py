@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import deque
-from .backtracking_generator import N, E, S, W, DIR_X, DIR_Y
+from backtracking_generator import N, E, S, W, DIR_X, DIR_Y
 
 
 """ BFS(Breath First Search):
