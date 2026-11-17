@@ -2,13 +2,12 @@
 requires = ["setuptools>=61.0"]
 buld-backend = "setuptools.build_meta"
 
-[project][
+[project]
 name = "mazegen"
 version = "1.0.0"
 description = "Recursive backtracker maze generator"
 requires-python = ">=3.10"
-authors = [{ name = "Your Name", email = "you@example.com" }
-]
+authors = [{ name = "Your Name", email = "you@example.com" }]
 
 [tool.setuptools.package.find]
 include = ["mazegen"]
