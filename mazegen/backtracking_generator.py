@@ -17,24 +17,26 @@ class MazeGenerator:
     """
 
     def __init__(
-        self,
-        width: int,
-        height: int,
-        seed: int | None = None,
-        perfect: bool = True,
-        draw_42: bool = True
-        ) -> None:
+                self,
+                width: int,
+                height: int,
+                seed: int | None = None,
+                perfect: bool = True,
+                draw_42: bool = True) -> None:
         """Constructor of the maze
 
         Args:
             width (int): columns of the matrix
             height (int): rows of the matrix
-            seed (int | None): numeber for looping random edeges
-            perfect (bool, optional): Choice of the type of maze. Defaults to True.
-            draw_42 (bool, optional): Reserved cell that draw "42". Defaults to True.
+            seed (int | None): numeber for looping
+            random edeges
+            perfect (bool, optional): Choice of the
+            type of maze. Defaults to True.
+            draw_42 (bool, optional): Reserved cell
+            that draw "42". Defaults to True.
         """
         if width < 2 or height < 2:
-            raise ValueError(f"Maze size must be at least 2x2")
+            raise ValueError("Maze size must be at least 2x2")
         self.width = width
         self.height = height
         self.perfect = perfect
@@ -52,18 +54,21 @@ class MazeGenerator:
         pw = len(PATTERN42[0])
 
         if self.width < pw + 2 or self.height < ph + 2:
-            print("[Warning]: Maze too small to draw '42'pattern, skipping.")
-        # number of offset colums to leave to the left to have the pattern centered
-        # (total column of the maze minus total column of the pattern ) // 2 (returns an integer)
+            print("[Warning]: Maze too small"
+                  "to draw '42'pattern, skipping.")
+        # number of offset colums to
+        # leave to the left to have the pattern centered
+        # (total column of the maze minus total column of
+        # the pattern ) // 2 (returns an integer)
         offset_x = (self.width - pw) // 2
-        # number of offset rows to leave from the bottom to have the pattern centered
+        # number of offset rows to leave from the bottom
+        # to have the pattern centered
         offset_y = (self.height - ph) // 2
         for j, row in enumerate(PATTERN42):
             for i, cell in enumerate(row):
                 if cell:
-                    self._reserved.add((offset_x + i, offset_y + j))
-
-
+                    self._reserved.add((offset_x + i,
+                                        offset_y + j))
 
     def generate(self) -> list[list[int]]:
         """Generates the maze and return it's bitmask grid.
@@ -78,7 +83,6 @@ class MazeGenerator:
         if not self.perfect:
             self._add_loops(extra=0.1)
         return self._graph.to_wall_grid()
-
 
     def _start_cell(self) -> Cell:
         """Fist non-reserved cell (top-left).
@@ -119,7 +123,6 @@ class MazeGenerator:
         neighbors = list(self._graph.neighbors(cell))
         self._rng.shuffle(neighbors)
         return neighbors
-
 
     def _add_loops(self, extra: float) -> None:
         """Add random extra edges(loops) with probability 'extra'.
