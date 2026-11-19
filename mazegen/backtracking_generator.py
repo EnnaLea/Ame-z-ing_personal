@@ -1,155 +1,153 @@
 from __future__ import annotations
 import random
 
-
-# All the four walls expressed in bit
-N, E, S, W = 1, 2, 4, 8
-
-# All the walls are closed
-ALL_WALLS = N | E | S | W
-
-# calculate coordinates of the cell adjacent of the direction
-DIR_X: dict[int, int] = {E: 1, W: -1, N: 0, S: 0}
-DIR_Y: dict[int, int] = {E: 0, W: 0, N: -1, S: 1}
-
-OPPOSITE: dict[int, int] = {E: W, W: E, N: S, S: N}
-
-# Creation of "42" pattern with bit (5 row X 11 col and 1 col for spase)
-PATTERN_42: list[list[int]] = [
-    [1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0],
-    [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0],
-    [1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0],
-    [0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0],
-    [0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0],
-]
+from constants import PATTERN42
+from maze_graph import MazeGraph, Cell
 
 
 class MazeGenerator:
-    """Maze generator using the recusive backtracker algorithm
+    """Generates a maze by DFS on MazeGraph.
 
-    Example:
-        gen = MazeGenerator(width=20, height=15, seed=42)
-        grid = gen.generate()
-        gen.save_to_file("maze.txt", entry=(0, 0), exit=(19, 14))
+       Alghoritm:
+       - Build MazeGraph with all non reserved cell and no edges.
+       - Use DFS to add an edge to each non visited neighbor from
+         a starting cell.
+       - If not perfect: add random edeges with loops.
+       - Convert the graph to a bitmask grid.
     """
 
     def __init__(
-                self, width: int, height: int, seed: int | None,
-                perfect: bool = True, draw_42: bool = True) -> None:
+        self,
+        width: int,
+        height: int,
+        seed: int | None = None,
+        perfect: bool = True,
+        draw_42: bool = True
+        ) -> None:
+        """Constructor of the maze
+
+        Args:
+            width (int): columns of the matrix
+            height (int): rows of the matrix
+            seed (int | None): numeber for looping random edeges
+            perfect (bool, optional): Choice of the type of maze. Defaults to True.
+            draw_42 (bool, optional): Reserved cell that draw "42". Defaults to True.
+        """
         if width < 2 or height < 2:
-            raise ValueError("Maze size must be at least 2x2")
+            raise ValueError(f"Maze size must be at least 2x2")
         self.width = width
         self.height = height
         self.perfect = perfect
-        self.draw_42 = draw_42
-        self._visited: set[tuple[int, int]] = set()
-        self._ranum = random.Random(seed)
-        self._grid: list[list[int]] = [
-            [ALL_WALLS for _ in range(width)] for _ in range(height)
-        ]
-        self._reserved: set[tuple[int, int]] = set()
+        self.draw42 = draw_42
+        self._rng = random.Random(seed)
+        self._reserved: set[Cell] = set()
         if draw_42:
-            self.place_42()
+            self._place_42()
+        self._graph: MazeGraph | None = None
 
-    def place_42(self) -> None:
-        """Center '42' pattern if the maze is big enough"""
-        pattern_h = len(PATTERN_42)
-        pattern_w = len(PATTERN_42[0])
-        # create a 1 cell margin around the pattern
-        if (self.width < (pattern_w + 2) or self.height < (pattern_h + 2)):
-            print("[Warning!] Maze too small to draw '42', skipping.")
-            return
-        offset_x = (self.width - pattern_w) // 2
-        offset_y = (self.height - pattern_h) // 2
-        for j, row in enumerate(PATTERN_42):
+    def _place_42(self) -> None:
+        """Reserve and isolate cells to form 42 pattern
+        """
+        ph = len(PATTERN42)
+        pw = len(PATTERN42[0])
+
+        if self.width < pw + 2 or self.height < ph + 2:
+            print("[Warning]: Maze too small to draw '42'pattern, skipping.")
+        # number of offset colums to leave to the left to have the pattern centered
+        # (total column of the maze minus total column of the pattern ) // 2 (returns an integer)
+        offset_x = (self.width - pw) // 2
+        # number of offset rows to leave from the bottom to have the pattern centered
+        offset_y = (self.height - ph) // 2
+        for j, row in enumerate(PATTERN42):
             for i, cell in enumerate(row):
                 if cell:
-                    x, y = offset_x + i, offset_y + j
-                    self._reserved.add((x, y))
-                    # all walls closed
-                    self._grid[y][x] = ALL_WALLS
+                    self._reserved.add((offset_x + i, offset_y + j))
+
+
 
     def generate(self) -> list[list[int]]:
-        """Execute recursive backtracking
-        from (0, 0) and print the grid
-        """
-        start_x, start_y = self._start_cell()
-        self._carve(start_x, start_y)
-        if not self.perfect:
-            self._add_loops(extra=0.1)
-        return self._grid
-
-    def _start_cell(self) -> tuple[int, int]:
-        """Find a not reserved cell
-           as a start point
-        """
-        for y in range(self.height):
-            for x in range(self.width):
-                if (x, y) not in self._reserved:
-                    return x, y
-        raise RuntimeError("All cells reserved: maze impossible")
-
-    def _carve(self, carve_x: int, carve_y: int) -> None:
-        """Recursive backtracking: carve a path from cell.
-
-        Args:
-            carve_x (int): horizontal point
-            carve_y (int): vertical point
-        """
-        self._visited.add((carve_x, carve_y))
-        directions = [N, S, E, W]
-        self._ranum.shuffle(directions)
-        for d in directions:
-            new_x, new_y = carve_x + DIR_X[d], carve_y + DIR_Y[d]
-            # border control
-            if not (0 <= new_x < self.width and 0 <= new_y < self.height):
-                continue
-            if ((new_x, new_y) in self._reserved or
-               (new_x, new_y) in self._visited):
-                continue
-            if (self._grid[new_y][new_x] == ALL_WALLS and
-               (new_x, new_y) not in self._reserved):
-                # open walls from both directions
-                # &= bit to bit with assignement operator
-                # ~ bit to bit negation
-                # we negate bit d and leave the othersas they are -> open wall
-                self._grid[carve_y][carve_x] &= ~d
-                self._grid[new_y][new_x] &= ~OPPOSITE[d]
-                self._carve(new_x, new_y)
-
-    def _add_loops(self, extra: float) -> None:
-        """Break the perfection by adding more loops(more open walls)
-
-        Args:
-            extra (float): how much percentage of walls will be opened
-            es.(extra=0.1 -> 10% of walls to be opened)
-        """
-        for y in range(self.height):
-            for x in range(self.width):
-                if (x, y) in self._reserved:
-                    continue
-                for d in (E, S):
-                    new_x, new_y = x + DIR_X[d], y + DIR_Y[d]
-                    # border control
-                    if not (0 <= new_x < self.width and
-                            0 <= new_y < self.height):
-                        continue
-                    if (new_x, new_y) in self._reserved:
-                        continue
-                    # & d -> isolating bit of direction d
-                    if (self._grid[new_y][new_x] & d and
-                       self._ranum.random() < extra):
-                        self._grid[y][x] &= ~d
-                        self._grid[new_y][new_x] &= ~OPPOSITE[d]
-
-    def to_hex_lines(self) -> list[str]:
-        """ An hexadecimal character per cell.
+        """Generates the maze and return it's bitmask grid.
 
         Returns:
-            list[str]: list of string, one string per row.
-            Each character a hex digit.
+            list[list[int]]: list of lists of bit.
         """
+        self._graph = MazeGraph(self.width, self.height, self._reserved)
+        start = self._start_cell()
+        self._visited: set[Cell] = set()
+        self._dfs(start)
+        if not self.perfect:
+            self._add_loops(extra=0.1)
+        return self._graph.to_wall_grid()
+
+
+    def _start_cell(self) -> Cell:
+        """Fist non-reserved cell (top-left).
+
+        Returns:
+            Cell: starting cell.
+        """
+        for y in range(self.height):
+            for x in range(self.width):
+                if x not in self._reserved:
+                    return (x, y)
+        raise RuntimeError("All cells reserved: Maze impossible.")
+
+    def _dfs(self, cell: Cell) -> None:
+        """Recursive DFS that visit cell than each unvisited   neighbor.
+
+        Args:
+            cell (Cell): starting cell.
+        """
+        self._visited.add(cell)
+        for neighbor in self._shuffled_neighbors(cell):
+            if neighbor in self._visited:
+                continue
+            assert self._graph is not None
+            self._graph.add_edge(cell, neighbor)
+            self._dfs(neighbor)
+
+    def _shuffled_neighbors(self, cell: Cell) -> list[Cell]:
+        """Return unvisited neighbors cells.
+
+        Args:
+            cell (Cell): starting cell.
+
+        Returns:
+            list[Cell]: list of unviseted nighbor cells.
+        """
+        assert self._graph is not None
+        neighbors = list(self._graph.neighbors(cell))
+        self._rng.shuffle(neighbors)
+        return neighbors
+
+
+    def _add_loops(self, extra: float) -> None:
+        """Add random extra edges(loops) with probability 'extra'.
+
+
+        Args:
+            extra (float): probability of adding an edge(0.0, 0.1)
+        """
+        assert self._graph is not None
+        candidates = self._graph.full_edge_list()
+        self._rng.shuffle(candidates)
+        # iterate each tuple then unpack in four variables.
+        for (a, b, _, _) in candidates:
+            if self._graph.has_edge(a, b):
+                continue
+            if self._rng.random() < extra:
+                self._graph.add_edge(a, b)
+
+    def to_hex_lines(self) -> list[str]:
+        """Output format: one hex char per cell, row by row.
+
+        Returns:
+            list[str]: bitmask grid.
+        """
+        if self._graph is None:
+            raise RuntimeError("gnerate() must be called first.")
+        grid = self._graph.to_wall_grid()
         return [
-            "".join(format(self._grid[y][x], "X") for x in range(self.width))
+            "".join(format(grid[y][x], "X") for x in range(self.width))
             for y in range(self.height)
         ]
