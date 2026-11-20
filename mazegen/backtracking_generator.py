@@ -56,6 +56,7 @@ class MazeGenerator:
         if self.width < pw + 2 or self.height < ph + 2:
             print("[Warning]: Maze too small"
                   "to draw '42'pattern, skipping.")
+            return
         # number of offset colums to
         # leave to the left to have the pattern centered
         # (total column of the maze minus total column of
@@ -148,7 +149,7 @@ class MazeGenerator:
             list[str]: bitmask grid.
         """
         if self._graph is None:
-            raise RuntimeError("gnerate() must be called first.")
+            raise RuntimeError("generate() must be called first.")
         grid = self._graph.to_wall_grid()
         return [
             "".join(format(grid[y][x], "X") for x in range(self.width))
