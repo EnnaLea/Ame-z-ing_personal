@@ -72,10 +72,10 @@ class MazeGenerator:
                                         offset_y + j))
 
     def generate(self) -> list[list[int]]:
-        """Generates the maze and return it's bitmask grid.
+        """Generates the maze and return its bitmask grid.
 
         Returns:
-            list[list[int]]: list of lists of bit.
+            list[list[int]]: list of lists of int (bitmask).
         """
         self._graph = MazeGraph(self.width, self.height, self._reserved)
         start = self._start_cell()
@@ -104,10 +104,12 @@ class MazeGenerator:
             cell (Cell): starting cell.
         """
         self._visited.add(cell)
+        if self._graph is None:
+            raise RuntimeError("generate() must be called first.")
         for neighbor in self._shuffled_neighbors(cell):
             if neighbor in self._visited:
                 continue
-            assert self._graph is not None
+            # assert self._graph is not None
             self._graph.add_edge(cell, neighbor)
             self._dfs(neighbor)
 
@@ -120,7 +122,8 @@ class MazeGenerator:
         Returns:
             list[Cell]: list of unviseted nighbor cells.
         """
-        assert self._graph is not None
+        if self._graph is None:
+            raise RuntimeError("generate() must be called first.")
         neighbors = list(self._graph.neighbors(cell))
         self._rng.shuffle(neighbors)
         return neighbors
@@ -132,7 +135,8 @@ class MazeGenerator:
         Args:
             extra (float): probability of adding an edge(0.0, 0.1)
         """
-        assert self._graph is not None
+        if self._graph is None:
+            raise RuntimeError("generate() must be called first.")
         candidates = self._graph.full_edge_list()
         self._rng.shuffle(candidates)
         # iterate each tuple then unpack in four variables.

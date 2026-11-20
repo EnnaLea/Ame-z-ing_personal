@@ -6,7 +6,7 @@ from constants import PATTERN42
 from maze_graph import MazeGraph, Cell
 
 
-class DsjoinSet:
+class DisjoinSet:
     """Union-Find with path compression and union by rank.
     """
 
@@ -98,20 +98,21 @@ class KruskalMazeGenerator:
                     self._reserved.add((offset_x + i, offset_y + j))
 
     def generate(self) -> list[list[int]]:
-        """Generates the maze and return it's bitmask grid.
+        """Generates the maze and return its bitmask grid.
 
         Returns:
-            list[list[int]]: list of lists of bit.
+            list[list[int]]: list of lists of int (bitmask).
         """
         # Build all possible edges
-        assert self._graph is not None
+        if self._graph is None:
+            raise RuntimeError("generate() must be called first.")
         candidates = self._graph.full_edge_list()
         self._rng.shuffle(candidates)
 
         # Use Union_Find on all nodes
         nodes = self._graph.nodes()
         index: dict[Cell, int] = {cell: i for i, cell in enumerate(nodes)}
-        ds = DsjoinSet(len(nodes))
+        ds = DisjoinSet(len(nodes))
 
         # Process edges in random order
         for (a, b, _, _) in candidates:
@@ -119,7 +120,7 @@ class KruskalMazeGenerator:
                 self._graph.add_edge(a, b)
 
         # Add optional loop
-        if not self.perfect:
+        if not self.perfect:	
             self._add_loops(extra=0.1)
 
         return self._graph.to_wall_grid()
@@ -130,7 +131,8 @@ class KruskalMazeGenerator:
         Args:
             extra (float): probability of adding an edge(0.0, 0.1)
         """
-        assert self._graph is not None
+        if self._graph is None:
+            raise RuntimeError("generate() must be called first.")
         candidates = self._graph.full_edge_list()
         self._rng.shuffle(candidates)
         for (a, b, _, _) in candidates:
