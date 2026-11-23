@@ -1,4 +1,8 @@
-from backtracking_generator import MazeGenerator, N, E, S, W, ALL_WALLS
+from constants import N, E, S, W, ALL_WALLS
+from graph import Graph
+from maze_graph import MazeGraph
+from backtracking_generator import MazeGenerator
+from kruskal_generator import KruskalMazeGenerator, DisjoinSet
 from solver import solve, path_to_string
 
 # Pattern facade: clean and stable API that hides
@@ -8,7 +12,9 @@ from solver import solve, path_to_string
 
 
 __all__ = [
-    "MazeGenerator", "solve", "path_to_string",
+    "MazeGenerator", "KruskalMazeGenerator",
+    "DisjoinSet", "Graph", "MazeGraph",
+    "solve", "path_to_string",
     "N", "E", "S", "W", "ALL_WALLS"
 ]
 
